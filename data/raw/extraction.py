@@ -14,13 +14,18 @@ def upload_files_to_s3():
     bucket_name = os.getenv("bucket_name")
     csv_file = os.getenv("csv_file")
     json_file = os.getenv("json_file")
-        
+    reference_data = os.getenv("reference_file")
+
     csv_key = "raw/meridian_trades.csv"
     json_key = "raw/meridian_trades.json"
+    reference_key = "raw/meridian_reference_data.csv"
 
     #Start S3 Client
     s3_client = boto3.client("s3")
-    
+
+    print(f"Uploading {reference_data} to s3://{bucket_name}/{reference_key}")
+    s3_client.upload_file(reference_data, bucket_name, reference_key)
+
     print(f"Uploading {csv_file} to s3://{bucket_name}/{csv_key}")
     s3_client.upload_file(csv_file, bucket_name, csv_key)
 

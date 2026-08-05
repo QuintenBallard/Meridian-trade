@@ -58,7 +58,7 @@ log_df_schema = pa.DataFrameSchema(
     coerce=True
 )
 
-def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch_df: pd.DataFrame):
+def validate_dataframes(merged_df: pd.DataFrame = merged_df, csv_log_df: pd.DataFrame = csv_log_df, batch_df: pd.DataFram = batch_df):
     """Validate all pipeline DataFrames against their Pandera schemas."""
 
     try:

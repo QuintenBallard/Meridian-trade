@@ -3,6 +3,8 @@ import boto3
 import os
 import json
 import logging
+import sys
+from uuid import uuid4
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -83,8 +85,6 @@ def remove_invalid_trades(df):
 
     df = df.copy()
 
-    logtime = pd.Timestamp.now(tz="UTC")
-
     missing_instrument = df["instrument_id"].isna()
 
     # Records that will go into the data-quality log
@@ -92,7 +92,6 @@ def remove_invalid_trades(df):
 
     instrument_data_log_df["error_code"] = "MISSING_INSTRUMENT_ID"
     instrument_data_log_df["error_message"] = "Trade has no instrument_id"
-    instrument_data_log_df["logged_at"] = logtime
 
     logging.info(f"Found {len(instrument_data_log_df)} trades with missing instrument_id. These will be logged and removed from the valid trades.")
 
@@ -106,7 +105,6 @@ def remove_invalid_trades(df):
     
     negative_data_log_df["error_code"] = "NEGATIVE_PRICE"
     negative_data_log_df["error_message"] = "Trade has a negative price"
-    negative_data_log_df["logged_at"] = logtime
 
     logging.info(f"Found {len(negative_data_log_df)} trades with negative prices. These will be logged and removed from the valid trades.")
 
@@ -136,7 +134,7 @@ def calculate_trade_value(df):
     df["trade_value"] = df["quantity"] * df["price"]
     return df
 
-def main():
+def run_pipeline():
 
     load_dotenv()
 
@@ -156,6 +154,7 @@ def main():
         try:
             logging.info(f"Attempt {attempt + 1}: Fetching CSV file from S3")
             csv_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_csv_key)
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching CSV file from S3: {e}")
             raise
@@ -164,6 +163,7 @@ def main():
         try:
             logging.info(f"Attempt {attempt + 1}: Fetching JSON file from S3")
             json_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_json_key)
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching JSON file from S3: {e}")
             raise
@@ -172,6 +172,7 @@ def main():
         try:
             logging.info(f"Attempt {attempt + 1}: Fetching reference data from S3")
             reference_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_reference_key)
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching reference data from S3: {e}")
             raise
@@ -206,14 +207,26 @@ def main():
     cleaned_csv, csv_log_df = remove_invalid_trades(cleaned_csv)
     cleaned_json, json_log_df = remove_invalid_trades(cleaned_json)
 
+    if cleaned_csv.equals(cleaned_json):
+        logging.info("CSV and JSON trades are identical after cleaning.")
+    else:
+        sys.exit("CSV and JSON trades are not identical after cleaning. Exiting the pipeline.")
+        
     logging.info("Merging data...")
     merged_df = merge_data(cleaned_csv, reference_df)
 
     logging.info("Calculating trade value...")
     merged_df = calculate_trade_value(merged_df)
 
+    batch_id = str(uuid4())
+
+    merged_df["batch_id"] = batch_id
+    csv_log_df["batch_id"] = batch_id
+
+    batch_df = pd.DataFrame({"batch_id": [batch_id], "batch_date": datetime.today()})
+
     logging.info("Finished processing data.")
-    return merged_df, reference_df, csv_log_df, json_log_df
+    return merged_df, csv_log_df, batch_df
 
 if __name__ == "__main__":
-    merged_df, reference_df, csv_log_df, json_log_df = main()
+    merged_df, csv_log_df, batch_df = run_pipeline()

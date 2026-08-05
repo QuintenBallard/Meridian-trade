@@ -2,6 +2,7 @@ import pandas as pd
 import boto3
 import os
 import json
+import logging
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -9,6 +10,8 @@ def extract_json_data(json_data):
     """Extract relevant fields from the JSON data and return a DataFrame."""
 
     trade_records = []
+
+    logging.info("Extracting Data from JSON file")
 
     for trade in json_data:
         trade_records.append({
@@ -91,6 +94,8 @@ def remove_invalid_trades(df):
     instrument_data_log_df["error_message"] = "Trade has no instrument_id"
     instrument_data_log_df["logged_at"] = logtime
 
+    logging.info(f"Found {len(instrument_data_log_df)} trades with missing instrument_id. These will be logged and removed from the valid trades.")
+
     # Records allowed to continue through the pipeline
     valid_trades_df = df.loc[~missing_instrument].copy()
 
@@ -102,6 +107,8 @@ def remove_invalid_trades(df):
     negative_data_log_df["error_code"] = "NEGATIVE_PRICE"
     negative_data_log_df["error_message"] = "Trade has a negative price"
     negative_data_log_df["logged_at"] = logtime
+
+    logging.info(f"Found {len(negative_data_log_df)} trades with negative prices. These will be logged and removed from the valid trades.")
 
     # Records allowed to continue through the pipeline
     valid_trades_df = valid_trades_df.loc[~negative_prices].copy()
@@ -141,27 +148,73 @@ def main():
     s3_json_key = "raw/meridian_trades.json"
     s3_reference_key = "raw/meridian_reference_data.csv"
 
-    csv_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_csv_key)
-    json_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_json_key)
-    reference_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_reference_key)
+    csv_object = None
+    json_object = None
+    reference_object = None
+
+    for attempt in range(3):
+        try:
+            logging.info(f"Attempt {attempt + 1}: Fetching CSV file from S3")
+            csv_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_csv_key)
+        except Exception as e:
+            logging.error(f"Error occurred while fetching CSV file from S3: {e}")
+            raise
+
+    for attempt in range(3):        
+        try:
+            logging.info(f"Attempt {attempt + 1}: Fetching JSON file from S3")
+            json_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_json_key)
+        except Exception as e:
+            logging.error(f"Error occurred while fetching JSON file from S3: {e}")
+            raise
+
+    for attempt in range(3):        
+        try:
+            logging.info(f"Attempt {attempt + 1}: Fetching reference data from S3")
+            reference_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_reference_key)
+        except Exception as e:
+            logging.error(f"Error occurred while fetching reference data from S3: {e}")
+            raise
 
     json_data = json.loads(json_object['Body'].read().decode('utf-8'))
 
     json_df = extract_json_data(json_data)
+
+    if json_df.empty:
+        logging.warning("No valid trades found in the JSON file.")
+
+    if len(json_df) < 100000:
+        logging.warning(f"JSON file contains only {len(json_df)} trades, which is less than the expected 100,000 trades.")
+
+    logging.info("Reading CSV file...")
     csv_df = pd.read_csv(csv_object['Body'])
+
+    if csv_df.empty:
+        logging.warning("No valid trades found in the CSV file.")
+
+    if len(csv_df) < 100000:
+        logging.warning(f"CSV file contains only {len(csv_df)} trades, which is less than the expected 100,000 trades.")
+
+    logging.info("Reading reference data...")
     reference_df = pd.read_csv(reference_object['Body'])
 
+    logging.info("Normalizing trade data...")
     cleaned_csv = normalize_trades(csv_df)
     cleaned_json = normalize_trades(json_df)
 
+    logging.info("Removing invalid trades...")
     cleaned_csv, csv_log_df = remove_invalid_trades(cleaned_csv)
     cleaned_json, json_log_df = remove_invalid_trades(cleaned_json)
 
+    logging.info("Merging data...")
     merged_df = merge_data(cleaned_csv, reference_df)
 
+    logging.info("Calculating trade value...")
     merged_df = calculate_trade_value(merged_df)
 
+    logging.info("Finished processing data.")
     return merged_df, reference_df, csv_log_df, json_log_df
 
 if __name__ == "__main__":
     merged_df, reference_df, csv_log_df, json_log_df = main()
+    print(merged_df)

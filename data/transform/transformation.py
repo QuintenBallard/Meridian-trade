@@ -80,14 +80,16 @@ def remove_invalid_trades(df):
 
     df = df.copy()
 
+    logtime = pd.Timestamp.now(tz="UTC")
+
     missing_instrument = df["instrument_id"].isna()
 
     # Records that will go into the data-quality log
-    data_log_df = df.loc[missing_instrument].copy()
+    instrument_data_log_df = df.loc[missing_instrument].copy()
 
-    data_log_df["error_code"] = "MISSING_INSTRUMENT_ID"
-    data_log_df["error_message"] = "Trade has no instrument_id"
-    data_log_df["logged_at"] = pd.Timestamp.now(tz="UTC")
+    instrument_data_log_df["error_code"] = "MISSING_INSTRUMENT_ID"
+    instrument_data_log_df["error_message"] = "Trade has no instrument_id"
+    instrument_data_log_df["logged_at"] = logtime
 
     # Records allowed to continue through the pipeline
     valid_trades_df = df.loc[~missing_instrument].copy()
@@ -95,14 +97,16 @@ def remove_invalid_trades(df):
     negative_prices = valid_trades_df["price"] < 0
     
     # Records that will go into the data-quality log
-    data_log_df = valid_trades_df.loc[negative_prices].copy()
+    negative_data_log_df = valid_trades_df.loc[negative_prices].copy()
     
-    data_log_df["error_code"] = "NEGATIVE_PRICE"
-    data_log_df["error_message"] = "Trade has a negative price"
-    data_log_df["logged_at"] = pd.Timestamp.now(tz="UTC")
+    negative_data_log_df["error_code"] = "NEGATIVE_PRICE"
+    negative_data_log_df["error_message"] = "Trade has a negative price"
+    negative_data_log_df["logged_at"] = logtime
 
     # Records allowed to continue through the pipeline
     valid_trades_df = valid_trades_df.loc[~negative_prices].copy()
+
+    data_log_df = pd.concat([instrument_data_log_df, negative_data_log_df], ignore_index=True)
     
     return valid_trades_df, data_log_df
 

@@ -217,4 +217,3 @@ def main():
 
 if __name__ == "__main__":
     merged_df, reference_df, csv_log_df, json_log_df = main()
-    print(merged_df)

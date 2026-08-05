@@ -1,4 +1,5 @@
 .env
-/week1_data
 /venv
 /.vscode
+**/__pycache__
+*.py[cod]

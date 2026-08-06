@@ -42,12 +42,11 @@ def upload_files_to_s3():
             logging.error(f"Error occurred while fetching CSV file: {e}")
             time.sleep(2)
 
-    logging.info(f"Uploading CSV file to S3 bucket: {bucket_name}")
     for attempt in range(retries):
         try:
-            logging.info(f"Uploading CSV file to S3 bucket: {bucket_name} with key: {csv_key}")
             s3_client.put_object(Body=csv_file, Bucket=bucket_name, Key=csv_key, ContentType="text/csv")
             logging.info(f"CSV file uploaded to S3 bucket: {bucket_name} with key: {csv_key}")
+            del csv_file
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading CSV file to S3: {e}")
@@ -66,7 +65,7 @@ def upload_files_to_s3():
         try:
             logging.info(f"Uploading JSON file to S3 bucket: {bucket_name} with key: {json_key}")
             s3_client.put_object(Body=json_file, Bucket=bucket_name, Key=json_key, ContentType="application/json")
-            logging.info(f"JSON file uploaded to S3 bucket: {bucket_name} with key: {json_key}")
+            del json_file
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading JSON file to S3: {e}")
@@ -83,9 +82,9 @@ def upload_files_to_s3():
     logging.info(f"Uploading Reference Data to S3 bucket: {bucket_name}")
     for attempt in range(retries):
         try:
-            logging.info(f"Uploading Reference Data to S3 bucket: {bucket_name} with key: {reference_key}")
             s3_client.put_object(Body=reference_data, Bucket=bucket_name, Key=reference_key, ContentType="text/csv")
             logging.info(f"Reference Data uploaded to S3 bucket: {bucket_name} with key: {reference_key}")
+            del reference_data
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading Reference Data to S3: {e}")

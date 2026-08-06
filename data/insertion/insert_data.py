@@ -1,13 +1,13 @@
 import sqlalchemy as sa
 import pandas as pd
 import time
+import logging
 from data.insertion.engine import engine
 from data.transform.schema_validation import validate_dataframes
 
 eg = engine
 
 trade_df, log_df, batch_df, validated = validate_dataframes()
-
 
 def load_df_to_db():
     if not validated:
@@ -17,6 +17,7 @@ def load_df_to_db():
         try:
             with eg.begin() as connection:
 
+                logging.info("Inserting Batch Dataframe into Meridian-DB")
                 batch_df.to_sql(
                     name="batch",
                     con=connection,
@@ -27,6 +28,7 @@ def load_df_to_db():
                     method="multi",
                 )
 
+                logging.info("Inserting Trade_data Dataframe into Meridian-DB")
                 trade_df.to_sql(
                     name="trade_data",
                     con=connection,
@@ -36,6 +38,7 @@ def load_df_to_db():
                     method="multi",
                 )
 
+                logging.info("Inserting Trade_error_log Dataframe into Meridian-DB")
                 log_df.to_sql(
                     name="trade_error_log",
                     con=connection,
@@ -46,15 +49,15 @@ def load_df_to_db():
                     method="multi",
                 )
 
-            print("Data loaded successfully.")
+            logging.info("Data loaded successfully.")
             break
 
         except sa.exc.SQLAlchemyError as error:
-            print(f"Database load attempt {attempt + 1} failed:")
-            print(error)
+            logging.info(f"Database load attempt {attempt + 1} failed:")
+            logging.error(error)
 
             if attempt == 2:
-                print("Database load failed after 3 attempts.")
+                logging.error("Database load failed after 3 attempts.")
                 raise
 
             time.sleep(2)

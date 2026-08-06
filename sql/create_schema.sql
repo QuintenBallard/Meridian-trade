@@ -2,7 +2,9 @@ CREATE SCHEMA IF NOT EXISTS meridian;
 
 CREATE TABLE IF NOT EXISTS meridian.batch (
     batch_id UUID PRIMARY KEY,
-    batch_date DATE NOT NULL
+    batch_date DATE NOT NULL,
+    records_collected BIGINT NOT NULL,
+    record_failures BIGINT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS meridian.trade_data (

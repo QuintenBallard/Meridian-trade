@@ -17,7 +17,7 @@ def load_df_to_db():
         try:
             with eg.begin() as connection:
 
-                logging.info("Inserting Batch Dataframe into Meridian-DB")
+                logging.info(f"Inserting {len(batch_df)} record from Batch Dataframe into Meridian-DB")
                 batch_df.to_sql(
                     name="batch",
                     con=connection,
@@ -28,7 +28,7 @@ def load_df_to_db():
                     method="multi",
                 )
 
-                logging.info("Inserting Trade_data Dataframe into Meridian-DB")
+                logging.info(f"Inserting {len(trade_df)} records from Trade_data Dataframe into Meridian-DB")
                 trade_df.to_sql(
                     name="trade_data",
                     con=connection,
@@ -38,7 +38,7 @@ def load_df_to_db():
                     method="multi",
                 )
 
-                logging.info("Inserting Trade_error_log Dataframe into Meridian-DB")
+                logging.info(f"Inserting {len(log_df)} records from Trade_error_log Dataframe into Meridian-DB")
                 log_df.to_sql(
                     name="trade_error_log",
                     con=connection,
@@ -61,7 +61,6 @@ def load_df_to_db():
                 raise
 
             time.sleep(2)
-
 
 if __name__ == "__main__":
     load_df_to_db()

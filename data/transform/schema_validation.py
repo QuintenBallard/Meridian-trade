@@ -33,7 +33,9 @@ merged_df_schema = pa.DataFrameSchema(
 batch_df_schema = pa.DataFrameSchema(
     columns = {
         "batch_id": pa.Column(pa.String, unique=True, nullable=False),
-        "batch_date": pa.Column(pa.Date, nullable=False)
+        "batch_date": pa.Column(pa.Date, nullable=False),
+        "records_collected": pa.Column(pa.Int64, nullable=False),
+        "record_failures": pa.Column(pa.Int64, nullable=False)
     },
     strict=True,
     coerce=True
@@ -41,7 +43,7 @@ batch_df_schema = pa.DataFrameSchema(
 
 log_df_schema = pa.DataFrameSchema(
     columns = {
-        "trade_id": pa.Column(pa.String, nullable=True),
+        "trade_id": pa.Column(pa.String, nullable=False),
         "instrument_id": pa.Column(pa.String, nullable=True),
         "instrument_type": pa.Column(pa.String, nullable=True),
         "quantity": pa.Column(pa.Int, nullable=True),

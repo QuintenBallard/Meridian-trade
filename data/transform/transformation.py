@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import sys
+from data.raw.extraction import upload_files_to_s3
 from uuid import uuid4
 from datetime import datetime
 from dotenv import load_dotenv
@@ -136,6 +137,12 @@ def calculate_trade_value(df):
 
 def run_pipeline():
 
+    extraction_status = upload_files_to_s3()
+
+    if not extraction_status:
+        logging.info("Extraction layer failed to Load data. Exiting System!")
+        sys.exit()
+
     load_dotenv()
 
     s3_client = boto3.client("s3")
@@ -224,6 +231,8 @@ def run_pipeline():
     csv_log_df["batch_id"] = batch_id
 
     batch_df = pd.DataFrame({"batch_id": [batch_id], "batch_date": datetime.today()})
+    batch_df["records_collected"] = len(merged_df)
+    batch_df["record_failures"] = len(csv_log_df)
 
     logging.info("Finished processing data.")
     return merged_df, csv_log_df, batch_df

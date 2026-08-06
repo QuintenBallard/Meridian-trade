@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import google.auth
 import time
 import logging
+import csv
 from googleapiclient.discovery import build
 
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
@@ -13,6 +14,8 @@ def upload_files_to_s3():
     """Uploads the CSV and JSON files to the S3 bucket."""
     #Load environment variables from .env file
     load_dotenv()
+
+    success = True
 
     #Authenticate with Google Drive API
     credentials, _ = google.auth.default(scopes=SCOPES)
@@ -42,14 +45,17 @@ def upload_files_to_s3():
             logging.error(f"Error occurred while fetching CSV file: {e}")
             time.sleep(2)
 
+
     for attempt in range(retries):
         try:
             s3_client.put_object(Body=csv_file, Bucket=bucket_name, Key=csv_key, ContentType="text/csv")
             logging.info(f"CSV file uploaded to S3 bucket: {bucket_name} with key: {csv_key}")
             del csv_file
+            success = True
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading CSV file to S3: {e}")
+            success = False
             time.sleep(2)
 
     json_file = None
@@ -66,9 +72,11 @@ def upload_files_to_s3():
             logging.info(f"Uploading JSON file to S3 bucket: {bucket_name} with key: {json_key}")
             s3_client.put_object(Body=json_file, Bucket=bucket_name, Key=json_key, ContentType="application/json")
             del json_file
+            success = True
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading JSON file to S3: {e}")
+            success = False
             time.sleep(2)
     
     reference_data = None
@@ -85,16 +93,20 @@ def upload_files_to_s3():
             s3_client.put_object(Body=reference_data, Bucket=bucket_name, Key=reference_key, ContentType="text/csv")
             logging.info(f"Reference Data uploaded to S3 bucket: {bucket_name} with key: {reference_key}")
             del reference_data
+            success = True
             break
         except Exception as e:
             logging.error(f"Error occurred while uploading Reference Data to S3: {e}")
+            success = False
             time.sleep(2)
 
     #Close the S3 client
     s3_client.close()
 
+    return success
+
 def main():
-    upload_files_to_s3()
+    status = upload_files_to_s3()
 
 if __name__ == "__main__":
     main()

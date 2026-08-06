@@ -137,12 +137,6 @@ def calculate_trade_value(df):
 
 def run_pipeline():
 
-    extraction_status = upload_files_to_s3()
-
-    if not extraction_status:
-        logging.info("Extraction layer failed to Load data. Exiting System!")
-        sys.exit()
-
     load_dotenv()
 
     s3_client = boto3.client("s3")

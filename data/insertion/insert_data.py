@@ -7,11 +7,7 @@ from data.transform.schema_validation import validate_dataframes
 
 eg = engine
 
-trade_df, log_df, batch_df, validated = validate_dataframes()
-
-def load_df_to_db():
-    if not validated:
-        raise ValueError("DataFrames failed schema validation. Load Cancelled.")
+def load_df_to_db(trade_df, log_df, batch_df):
 
     for attempt in range(3):
         try:
@@ -59,8 +55,9 @@ def load_df_to_db():
             if attempt == 2:
                 logging.error("Database load failed after 3 attempts.")
                 raise
-
+            
             time.sleep(2)
 
 if __name__ == "__main__":
-    load_df_to_db()
+    trade_df, log_df, batch_df, validated = validate_dataframes()
+    load_df_to_db(trade_df, log_df, batch_df)

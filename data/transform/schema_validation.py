@@ -1,10 +1,6 @@
 import pandas as pd
 import pandera as pa
 import pandera.pandas as pda
-from data.transform.transformation import run_pipeline
-
-merged_df, csv_log_df, batch_df = run_pipeline()
-
 
 merged_df_schema = pa.DataFrameSchema(
     columns={
@@ -60,7 +56,7 @@ log_df_schema = pa.DataFrameSchema(
     coerce=True
 )
 
-def validate_dataframes(merged_df: pd.DataFrame = merged_df, csv_log_df: pd.DataFrame = csv_log_df, batch_df: pd.DataFram = batch_df):
+def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch_df: pd.DataFrame):
     """Validate all pipeline DataFrames against their Pandera schemas."""
 
     try:
@@ -77,4 +73,5 @@ def validate_dataframes(merged_df: pd.DataFrame = merged_df, csv_log_df: pd.Data
     except pda.errors.SchemaErrors as error:
         print("Schema validation failed:")
         print(error.failure_cases)
-        return validated_merged_df, validated_log_df, validated_batch_df, False
+
+        return merged_df, csv_log_df, batch_df, False

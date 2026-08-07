@@ -71,7 +71,7 @@ def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch
 
         return validated_merged_df, validated_log_df, validated_batch_df, True
     
-    except pa.pandas.errors.SchemaErrors as error:
+    except pa.errors.SchemaErrors as error:
         logging.info("Schema validation failed:")
         logging.info(error.failure_cases)
 

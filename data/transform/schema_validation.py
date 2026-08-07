@@ -1,6 +1,7 @@
 import pandas as pd
 import pandera as pa
 import pandera.pandas as pda
+import logging
 
 merged_df_schema = pa.DataFrameSchema(
     columns={
@@ -66,12 +67,12 @@ def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch
 
         validated_batch_df = batch_df_schema.validate(batch_df,lazy=True)
 
-        print("All DataFrames passed schema validation.")
+        logging.info("All DataFrames passed schema validation.")
 
         return validated_merged_df, validated_log_df, validated_batch_df, True
     
     except pda.errors.SchemaErrors as error:
-        print("Schema validation failed:")
-        print(error.failure_cases)
+        logging.info("Schema validation failed:")
+        logging.info(error.failure_cases)
 
         return merged_df, csv_log_df, batch_df, False

@@ -169,7 +169,7 @@ def run_pipeline():
             logging.error(f"Error occurred while fetching JSON file from S3: {e}")
             raise
 
-    for attempt in range(3):        
+    for attempt in range(3):
         try:
             logging.info(f"Attempt {attempt + 1}: Fetching reference data from S3")
             reference_object = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_reference_key)
@@ -200,12 +200,15 @@ def run_pipeline():
     logging.info("Reading reference data...")
     reference_df = pd.read_csv(reference_object['Body'])
 
-    logging.info("Normalizing trade data...")
+    logging.info("Normalizing trade data in csv...")
     cleaned_csv = normalize_trades(csv_df)
+
+    logging.info("Normalizing trade data in json...")
     cleaned_json = normalize_trades(json_df)
 
-    logging.info("Removing invalid trades...")
+    logging.info("Removing invalid trades in csv...")
     cleaned_csv, csv_log_df = remove_invalid_trades(cleaned_csv)
+    logging.info("Removing invalid trades in json...")
     cleaned_json, json_log_df = remove_invalid_trades(cleaned_json)
 
     if cleaned_csv.equals(cleaned_json):
@@ -224,9 +227,8 @@ def run_pipeline():
     merged_df["batch_id"] = batch_id
     csv_log_df["batch_id"] = batch_id
 
-    batch_df = pd.DataFrame({"batch_id": [batch_id], "batch_date": datetime.today()})
-    batch_df["records_collected"] = len(merged_df)
-    batch_df["record_failures"] = len(csv_log_df)
+    logging.info("Creating Batch Dataframe")
+    batch_df = pd.DataFrame({"batch_id": [batch_id], "batch_date": datetime.today(), "records_collected": len(merged_df), "record_failures": len(csv_log_df)})
 
     logging.info("Finished processing data.")
     return merged_df, csv_log_df, batch_df

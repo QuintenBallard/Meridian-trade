@@ -41,6 +41,7 @@ def upload_files_to_s3():
         try:
             logging.info(f"Fetching CSV file from Google Drive with file ID: {csv_file_id}")
             csv_file = drive.files().get_media(fileId=csv_file_id).execute()
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching CSV file: {e}")
             time.sleep(2)
@@ -48,6 +49,7 @@ def upload_files_to_s3():
 
     for attempt in range(retries):
         try:
+            logging.info(f"Uploading CSV file to S3 bucket: {bucket_name} with key: {csv_key}")
             s3_client.put_object(Body=csv_file, Bucket=bucket_name, Key=csv_key, ContentType="text/csv")
             logging.info(f"CSV file uploaded to S3 bucket: {bucket_name} with key: {csv_key}")
             del csv_file
@@ -61,16 +63,18 @@ def upload_files_to_s3():
     json_file = None
     for attempt in range(retries):
         try:
+            logging.info(f"Fetching Json file from Google Drive with file ID: {json_file_id}")
             json_file = drive.files().get_media(fileId=json_file_id).execute()
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching JSON file: {e}")
             time.sleep(2)
 
-    logging.info(f"Uploading JSON file to S3 bucket: {bucket_name}")
     for attempt in range(retries):
         try:
             logging.info(f"Uploading JSON file to S3 bucket: {bucket_name} with key: {json_key}")
             s3_client.put_object(Body=json_file, Bucket=bucket_name, Key=json_key, ContentType="application/json")
+            logging.info(f"JSON file uploaded to S3 bucket: {bucket_name} with key: {json_key}")
             del json_file
             success = True
             break
@@ -82,7 +86,9 @@ def upload_files_to_s3():
     reference_data = None
     for attempt in range(retries):
         try:
+            logging.info(f"Fetching Reference file from Google Drive with file ID: {reference_data_id}")
             reference_data = drive.files().get_media(fileId=reference_data_id).execute()
+            break
         except Exception as e:
             logging.error(f"Error occurred while fetching reference data: {e}")
             time.sleep(2)

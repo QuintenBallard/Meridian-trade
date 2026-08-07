@@ -9,6 +9,8 @@ eg = engine
 
 def load_df_to_db(trade_df, log_df, batch_df):
 
+    success = False
+
     for attempt in range(3):
         try:
             with eg.begin() as connection:
@@ -45,19 +47,19 @@ def load_df_to_db(trade_df, log_df, batch_df):
                     method="multi",
                 )
 
-            logging.info("Data loaded successfully.")
+            success = True
             break
 
         except sa.exc.SQLAlchemyError as error:
             logging.info(f"Database load attempt {attempt + 1} failed:")
             logging.error(error)
-
+            success = False
             if attempt == 2:
                 logging.error("Database load failed after 3 attempts.")
                 raise
             
             time.sleep(2)
-
+    return success
 if __name__ == "__main__":
     trade_df, log_df, batch_df, validated = validate_dataframes()
     load_df_to_db(trade_df, log_df, batch_df)

@@ -12,6 +12,6 @@ DB_NAME = os.getenv("DB_NAME")
 
 DB_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-engine = sa.create_engine(DB_URL,echo=True)
+engine = sa.create_engine(DB_URL,echo=False)
 
 #Connection From Database to Python

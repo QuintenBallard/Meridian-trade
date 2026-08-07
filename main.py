@@ -22,17 +22,20 @@ def main():
     logging.info("Starting Transformation Layer")
     merged_df, log_df, batch_df = run_pipeline()
 
-    logging.info("Validating schemas") 
+    logging.info("Validating schemas")
     val_merged_df, val_log_df, val_batch_df, validated = validate_dataframes(merged_df, log_df, batch_df)
 
     if not validated:
         logging.info("DataFrames failed Schema Validation Layer, Stopping Pipeline!")
         sys.exit()
-    else:
-        logging.info("All Dataframes have a correct Schema")
 
     logging.info("Entering Data Insertion Layer")
-    load_df_to_db(val_merged_df, val_log_df, val_batch_df)
+    data_loaded = load_df_to_db(val_merged_df, val_log_df, val_batch_df)
+
+    if data_loaded:
+        logging.info("Data loaded successfully.")
+    else:
+        logging.info("Data was not loaded into DB")
 
 if __name__ == "__main__":
     main()

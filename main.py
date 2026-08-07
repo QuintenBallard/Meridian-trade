@@ -5,6 +5,11 @@ from data.raw.extraction import upload_files_to_s3
 from data.transform.transformation import run_pipeline
 from data.transform.schema_validation import validate_dataframes
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+
 def main():
     success = upload_files_to_s3()
 

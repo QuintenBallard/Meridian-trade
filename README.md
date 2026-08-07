@@ -678,7 +678,7 @@ Before running the pipeline, make sure `.env` contains:
 From the project root folder, run:
 
 ```powershell
-python main.py
+python -m main.py
 ```
 
 The pipeline will:

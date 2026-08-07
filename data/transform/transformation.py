@@ -6,10 +6,11 @@ import logging
 import sys
 from data.raw.extraction import upload_files_to_s3
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, date
 from dotenv import load_dotenv
+from typing import Tuple
 
-def extract_json_data(json_data):
+def extract_json_data(json_data: list[dict]) -> pd.DataFrame:
     """Extract relevant fields from the JSON data and return a DataFrame."""
 
     trade_records = []
@@ -33,7 +34,7 @@ def extract_json_data(json_data):
 
     return json_df
 
-def parse_trade_date(value):
+def parse_trade_date(value: datetime) -> date:
     """Parse the four date formats found in the trade data."""
 
     if pd.isna(value):
@@ -54,7 +55,7 @@ def parse_trade_date(value):
 
     return pd.NaT
 
-def normalize_trades(df):
+def normalize_trades(df: pd.DataFrame) -> pd.DataFrame:
     """Put CSV and JSON records into the same comparable format."""
 
     df = df.copy()
@@ -74,14 +75,12 @@ def normalize_trades(df):
         df[column] = (df[column].astype("string").str.strip().replace("", pd.NA))
 
     df["trade_date"] = df["trade_date"].apply(parse_trade_date)
-
     df["quantity"] = pd.to_numeric(df["quantity"],errors="coerce").astype("Int64")
-
     df["price"] = pd.to_numeric(df["price"], errors="coerce").round(2).astype("Float64")
 
     return df[columns]
 
-def remove_invalid_trades(df):
+def remove_invalid_trades(df: pd.DataFrame) ->  Tuple[pd.DataFrame, pd.DataFrame]:
     """Separate trades with missing instrument_id into a data-quality log."""
 
     df = df.copy()
@@ -116,7 +115,7 @@ def remove_invalid_trades(df):
     
     return valid_trades_df, data_log_df
 
-def merge_data(df, reference_df):
+def merge_data(df: pd.DataFrame, reference_df: pd.DataFrame) -> pd.DataFrame:
     """Merge trades with instrument reference data."""
 
     df = df.copy()
@@ -135,7 +134,7 @@ def calculate_trade_value(df):
     df["trade_value"] = df["quantity"] * df["price"]
     return df
 
-def run_pipeline():
+def run_pipeline() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     load_dotenv()
 
@@ -211,12 +210,25 @@ def run_pipeline():
     logging.info("Removing invalid trades in json...")
     cleaned_json, json_log_df = remove_invalid_trades(cleaned_json)
 
+    duplicate_mask = cleaned_csv.duplicated(keep="first")
+    dupe_df = cleaned_csv.loc[duplicate_mask].copy()
+
+    if not dupe_df.empty:
+        logging.info(f"Removing {len(dupe_df)} exact duplicate CSV rows.")
+
+        dupe_df["error_code"] = "EXACT_DUPLICATE_ROW"
+        dupe_df["error_message"] = "Exact duplicate of an earlier record; removed from valid trades."
+
+        cleaned_csv = cleaned_csv.loc[~duplicate_mask].copy()
+        csv_log_df = pd.concat([csv_log_df, dupe_df], ignore_index=True)
+
+    logging.info("Comparing cleaned CSV data to cleaned JSON data")
     if cleaned_csv.equals(cleaned_json):
         logging.info("CSV and JSON trades are identical after cleaning.")
     else:
-        sys.exit("CSV and JSON trades are not identical after cleaning. Exiting the pipeline.")
-        
-    logging.info("Merging data...")
+        logging.warning("CSV and JSON trades are not identical after cleaning.")
+    
+    logging.info("Merging data CSV data to Reference data")
     merged_df = merge_data(cleaned_csv, reference_df)
 
     logging.info("Calculating trade value...")

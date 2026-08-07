@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
 #Upload the CSV and JSON files to the S3 bucket
-def upload_files_to_s3():
+def upload_files_to_s3() -> bool:
     """Uploads the CSV and JSON files to the S3 bucket."""
     #Load environment variables from .env file
     load_dotenv()

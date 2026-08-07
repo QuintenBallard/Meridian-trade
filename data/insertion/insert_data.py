@@ -4,10 +4,11 @@ import time
 import logging
 from data.insertion.engine import engine
 from data.transform.schema_validation import validate_dataframes
+from typing import Tuple
 
 eg = engine
 
-def load_df_to_db(trade_df, log_df, batch_df):
+def load_df_to_db(trade_df: pd.DataFrame, log_df: pd.DataFrame, batch_df: pd.DataFrame) -> bool:
 
     success = False
 

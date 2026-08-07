@@ -2,6 +2,7 @@ import pandas as pd
 import pandera as pa
 import pandera.pandas as pda
 import logging
+from typing import Tuple
 
 merged_df_schema = pa.DataFrameSchema(
     columns={
@@ -57,7 +58,7 @@ log_df_schema = pa.DataFrameSchema(
     coerce=True
 )
 
-def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch_df: pd.DataFrame):
+def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch_df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, bool]:
     """Validate all pipeline DataFrames against their Pandera schemas."""
 
     try:
@@ -71,7 +72,7 @@ def validate_dataframes(merged_df: pd.DataFrame, csv_log_df: pd.DataFrame, batch
 
         return validated_merged_df, validated_log_df, validated_batch_df, True
     
-    except pda.errors.SchemaErrors as error:
+    except pa.pandas.errors.SchemaErrors as error:
         logging.info("Schema validation failed:")
         logging.info(error.failure_cases)
 

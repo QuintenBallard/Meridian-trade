@@ -1,6 +1,5 @@
 import pandas as pd
-import pandera as pa
-import pandera.pandas as pda
+import pandera.pandas as pa
 import logging
 from typing import Tuple
 

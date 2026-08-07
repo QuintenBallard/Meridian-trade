@@ -17,11 +17,12 @@ def main():
     logging.info("Starting Transformation Layer")
     merged_df, log_df, batch_df = run_pipeline()
 
-    logging.info("Validating schemas")
+    logging.info("Validating schemas") 
     val_merged_df, val_log_df, val_batch_df, validated = validate_dataframes(merged_df, log_df, batch_df)
 
     if not validated:
-        logging.info("DataFrames failed Schema Validation Layer")
+        logging.info("DataFrames failed Schema Validation Layer, Stopping Pipeline!")
+        sys.exit()
     else:
         logging.info("All Dataframes have a correct Schema")
 
